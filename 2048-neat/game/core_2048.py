@@ -1,8 +1,9 @@
-# from game.utils import Direction
+from game.utils import Direction
 # from game.utils import Key
 from game.utils import State
 from random import randint
 
+EMPTY_TILE = 0
 
 class GameCore:
     def __init__(self, game_size=4):
@@ -30,7 +31,31 @@ class GameCore:
         spawn_tile(self.board)
 
     def try_move(self, direction):
-        pass
+        # One pass to merge, one pass to shift
+        made_move = False
+
+        rotations = 0
+        back_rotations = 0
+        if direction == Direction.UP:
+            rotations = 2
+            back_rotations = 2
+        elif direction == Direction.DOWN:
+            rotations = 0
+            back_rotations = 0
+        elif direction == Direction.LEFT:
+            rotations = 3
+            back_rotations = 1
+        elif direction == Direction.RIGHT:
+            rotations = 1
+            back_rotations = 3
+
+        self.board = rotate_clockwise(self.board, rotations)
+
+        # Merge then shift through empty space
+
+        self.board = rotate_clockwise(self.board, back_rotations)
+
+
 
 
 def fresh_board(size):
@@ -41,7 +66,7 @@ def fresh_board(size):
 # P(x = 2) = 90%, P(x = 4) = 10%
 def spawn_tile(board):
     spawned = False
-    num_empty_tiles = count_value(board, 0)
+    num_empty_tiles = count_value(board, EMPTY_TILE)
     if num_empty_tiles == 0:
         return spawned
 
@@ -52,7 +77,7 @@ def spawn_tile(board):
     current_empty_tile = 0
     for i, i_val in enumerate(board):
         for j, j_val in enumerate(board):
-            if j_val == 0:
+            if j_val == EMPTY_TILE:
                 current_empty_tile = current_empty_tile + 1
                 if current_empty_tile == kth_selected_tile:
                     board[i][j] = tile_value
@@ -75,4 +100,20 @@ def count_value(arr, value):
 
     return count
 
-print(fresh_board(4))
+
+# 2D array
+def rotate_clockwise(arr, iteration):
+    if iteration <= 0:
+        return
+
+    l = len(arr)
+    for i in range(0, iteration):
+        for s in range(0, int(l / 2)):
+            for j in range(0, l - (2 * s) - 1):
+                temp = arr[s][s + j]
+                arr[s][s + j] = arr[l - s - j - 1][s]
+                arr[l - s - j - 1][s] = arr[l - s - 1][l - s - j - 1]
+                arr[l - s - 1][l - s - j - 1] = arr[s + j][l - s - 1]
+                arr[s + j][l - s - 1] = temp
+
+    return arr
