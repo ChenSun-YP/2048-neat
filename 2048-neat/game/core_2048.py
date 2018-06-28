@@ -15,13 +15,13 @@ class GameCore:
         self.score = 0
         self.State = State.MENU
 
-    def score(self):
+    def Score(self):
         return self.score
 
-    def board(self):
+    def Board(self):
         return self.board
 
-    def game_size(self):
+    def Game_size(self):
         return self.game_size
 
     def restart_game(self, game_size=4):
@@ -116,7 +116,7 @@ def spawn_tile(board):
     kth_selected_tile = randint(0, num_empty_tiles - 1)
     current_empty_tile = 0
     for i, i_val in enumerate(board):
-        for j, j_val in enumerate(board):
+        for j, j_val in enumerate(i_val):
             if j_val == EMPTY_TILE:
                 current_empty_tile = current_empty_tile + 1
                 if current_empty_tile == kth_selected_tile:
