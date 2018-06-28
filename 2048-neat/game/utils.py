@@ -26,6 +26,22 @@ class Direction(Enum):
     RIGHT = "right"
 
 
+direction_mapping = {None: None, Key.UP: Direction.UP, Key.DOWN: Direction.DOWN, Key.LEFT: Direction.LEFT, Key.RIGHT: Direction.RIGHT}
+key_mapping = {None: None, "w": Key.UP, "s": Key.DOWN, "a": Key.LEFT, "d": Key.RIGHT}
+
+
+def key_to_direction(key):
+    return direction_mapping[key]
+
+
+def char_to_key(char):
+    return key_mapping[char]
+
+
+def char_to_direction(char):
+    return direction_mapping[key_mapping[char]]
+
+
 BLACK = (0, 0, 0)
 RED = (244, 67, 54)
 PINK = (234, 30, 99)
