@@ -2,9 +2,11 @@ from game.utils import Direction
 # from game.ub4c106207f7d7ae4d7fb268df44519d4e1e
 # from game.utils import Key
 from game.utils import State
+from game.utils import char_to_direction
 from random import randint
 
 EMPTY_TILE = 0
+
 
 class GameCore:
     def __init__(self, game_size=4):
@@ -32,9 +34,7 @@ class GameCore:
         spawn_tile(self.board)
 
     def try_move(self, direction):
-        # One pass to merge, one pass to shift
-        made_move = False
-
+        moved = False
         rotations = 0
         back_rotations = 0
         if direction == Direction.UP:
@@ -49,14 +49,53 @@ class GameCore:
         elif direction == Direction.RIGHT:
             rotations = 1
             back_rotations = 3
+        else:
+            return moved
 
-        self.board = rotate_clockwise(self.board, rotations)
+        rotate_clockwise(self.board, rotations)
 
         # Merge then shift through empty space
+        merged = merge_down(self.board)
+        shifted = shift_down(self.board)
+        moved = merged or shifted
 
-        self.board = rotate_clockwise(self.board, back_rotations)
+        rotate_clockwise(self.board, back_rotations)
+
+        if moved:
+            spawn_tile(self.board)
+
+        return moved
+
+    # Can be used to notify new tile to observers
+    def _new_tile_appeared(self, new_tile_value):
+        self.score = self.score + new_tile_value
 
 
+def merge_down(board):
+    merged = False
+    for row in range(len(board) - 1, 0, -1):
+        for col in range(0, len(board[row])):
+            if board[row][col] != EMPTY_TILE:
+                if board[row][col] == board[row - 1][col]:
+                    merged = True
+                    board[row][col] = board[row][col] + board[row - 1][col]
+                    board[row - 1][col] = EMPTY_TILE
+    return merged
+
+
+# Shifts down tiles where there are empty spaces
+def shift_down(board):
+    shifted = False
+    for row in range(len(board) - 1, -1, -1):
+        for col in range(0, len(board[row])):
+            temp_row = row
+            while temp_row != len(board) - 1 and board[temp_row + 1][col] == EMPTY_TILE:
+                shifted = True
+                board[temp_row + 1][col] = board[temp_row][col]
+                board[temp_row][col] = EMPTY_TILE
+                temp_row = temp_row + 1
+
+    return shifted
 
 
 def fresh_board(size):
