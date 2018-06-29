@@ -10,7 +10,7 @@ def print_2d(arr):
 game = GameCore()
 game.restart_game()
 while True:
-    print_2d(game.board())
+    print_2d(game.Board())
     stdin = input("Move:")
     direction = char_to_direction(stdin)
     if direction is None:

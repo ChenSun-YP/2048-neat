@@ -13,7 +13,7 @@ class GameCore:
         self.game_size = game_size
         self.board = fresh_board(game_size)
         self.score = 0
-        self.State = State.MENU
+        self.state = State.MENU
 
     def Score(self):
         return self.score
@@ -24,16 +24,24 @@ class GameCore:
     def Game_size(self):
         return self.game_size
 
+    def State(self):
+        return self.state
+
     def restart_game(self, game_size=4):
         self.game_size = game_size
         self.score = 0
         self.board = fresh_board(game_size)
+        self.state = State.IDLE
 
         # Spawn two tiles randomly on the board
         spawn_tile(self.board)
         spawn_tile(self.board)
 
     def try_move(self, direction):
+        if not has_move(self.board):
+            self.state = State.LOSS
+            return False
+
         moved = False
         rotations = 0
         back_rotations = 0
@@ -66,7 +74,7 @@ class GameCore:
 
         return moved
 
-    # Can be used to notify new tile to observers
+    # Can also be used to notify new tile to observers
     def _new_tile_appeared(self, new_tile_value):
         self.score = self.score + new_tile_value
 
@@ -96,6 +104,31 @@ def shift_down(board):
                 temp_row = temp_row + 1
 
     return shifted
+
+
+def has_move(board):
+    if count_value(board, EMPTY_TILE) > 0:
+        return True
+
+    _has_move = False
+    for i in range(1, 5):
+        _has_move = has_merge_down(board)
+        if _has_move:
+            # Rotate the board back
+            rotate_clockwise(board, 5 - i)
+            return _has_move
+
+        rotate_clockwise(board)
+
+    return _has_move
+
+
+def has_merge_down(board):
+    for row in range(len(board) - 1, 0, -1):
+        for col in range(0, len(board[row])):
+            if board[row][col] == board[row - 1][col]:
+                return True
+    return False
 
 
 def fresh_board(size):
@@ -141,8 +174,8 @@ def count_value(arr, value):
     return count
 
 
-# 2D array
-def rotate_clockwise(arr, iteration):
+# 2D array, rotates by 90 degrees
+def rotate_clockwise(arr, iteration = 1):
     if iteration <= 0:
         return
 
