@@ -27,10 +27,11 @@ class GameCore:
     def State(self):
         return self.state
 
-    def restart_game(self, game_size=4):
-        self.game_size = game_size
+    def restart_game(self, game_size=None):
+        self.game_size = game_size if game_size is not None else self.game_size
+
         self.score = 0
-        self.board = fresh_board(game_size)
+        self.board = fresh_board(self.game_size)
         self.state = State.IDLE
 
         # Spawn two tiles randomly on the board
