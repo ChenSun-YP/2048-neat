@@ -35,8 +35,8 @@ class GameCore:
         self.state = State.IDLE
 
         # Spawn two tiles randomly on the board
-        spawn_tile(self.board)
-        spawn_tile(self.board)
+        self._spawn_tile(self.board)
+        self._spawn_tile(self.board)
 
     def try_move(self, direction):
         if not has_move(self.board):
@@ -64,14 +64,14 @@ class GameCore:
         rotate_clockwise(self.board, rotations)
 
         # Merge then shift through empty space
-        merged = merge_down(self.board)
-        shifted = shift_down(self.board)
+        merged = self._merge_down(self.board)
+        shifted = self._shift_down(self.board)
         moved = merged or shifted
 
         rotate_clockwise(self.board, back_rotations)
 
         if moved:
-            spawn_tile(self.board)
+            self._spawn_tile(self.board)
 
         return moved
 
@@ -79,32 +79,60 @@ class GameCore:
     def _new_tile_appeared(self, new_tile_value):
         self.score = self.score + new_tile_value
 
+    def _merge_down(self, board):
+        merged = False
+        for row in range(len(board) - 1, 0, -1):
+            for col in range(0, len(board[row])):
+                if board[row][col] != EMPTY_TILE:
+                    if board[row][col] == board[row - 1][col]:
+                        merged = True
+                        new_value = board[row][col] + board[row - 1][col]
+                        board[row][col] = new_value
+                        board[row - 1][col] = EMPTY_TILE
+                        self._new_tile_appeared(new_value)
+        return merged
 
-def merge_down(board):
-    merged = False
-    for row in range(len(board) - 1, 0, -1):
-        for col in range(0, len(board[row])):
-            if board[row][col] != EMPTY_TILE:
-                if board[row][col] == board[row - 1][col]:
-                    merged = True
-                    board[row][col] = board[row][col] + board[row - 1][col]
-                    board[row - 1][col] = EMPTY_TILE
-    return merged
+    # Shifts down tiles where there are empty spaces
+    def _shift_down(self, board):
+        shifted = False
+        for row in range(len(board) - 1, -1, -1):
+            for col in range(0, len(board[row])):
+                temp_row = row
+                while temp_row != len(board) - 1 and board[temp_row + 1][col] == EMPTY_TILE:
+                    shifted = True
+                    board[temp_row + 1][col] = board[temp_row][col]
+                    board[temp_row][col] = EMPTY_TILE
+                    temp_row = temp_row + 1
 
+        return shifted
 
-# Shifts down tiles where there are empty spaces
-def shift_down(board):
-    shifted = False
-    for row in range(len(board) - 1, -1, -1):
-        for col in range(0, len(board[row])):
-            temp_row = row
-            while temp_row != len(board) - 1 and board[temp_row + 1][col] == EMPTY_TILE:
-                shifted = True
-                board[temp_row + 1][col] = board[temp_row][col]
-                board[temp_row][col] = EMPTY_TILE
-                temp_row = temp_row + 1
+    # Randomly spawns a tile of value 2 or 4
+    # P(x = 2) = 90%, P(x = 4) = 10%
+    def _spawn_tile(self, board):
+        spawned = False
+        num_empty_tiles = count_value(board, EMPTY_TILE)
+        if num_empty_tiles == 0:
+            return spawned
 
-    return shifted
+        probability = randint(1, 100)
+        tile_value = 2 if probability <= 90 else 4
+
+        kth_selected_tile = randint(0, num_empty_tiles - 1)
+        current_empty_tile = 0
+        for i, i_val in enumerate(board):
+            for j, j_val in enumerate(i_val):
+                if j_val == EMPTY_TILE:
+                    current_empty_tile = current_empty_tile + 1
+                    if current_empty_tile == kth_selected_tile:
+                        board[i][j] = tile_value
+                        spawned = True
+                        break
+
+            if spawned:
+                self._new_tile_appeared(tile_value)
+                break
+
+        return spawned
 
 
 def has_move(board):
@@ -134,34 +162,6 @@ def has_merge_down(board):
 
 def fresh_board(size):
     return [[0 for i in range(0, size)] for j in range(0, size)]
-
-
-# Randomly spawns a tile of value 2 or 4
-# P(x = 2) = 90%, P(x = 4) = 10%
-def spawn_tile(board):
-    spawned = False
-    num_empty_tiles = count_value(board, EMPTY_TILE)
-    if num_empty_tiles == 0:
-        return spawned
-
-    probability = randint(1, 100)
-    tile_value = 2 if probability <= 90 else 4
-
-    kth_selected_tile = randint(0, num_empty_tiles - 1)
-    current_empty_tile = 0
-    for i, i_val in enumerate(board):
-        for j, j_val in enumerate(i_val):
-            if j_val == EMPTY_TILE:
-                current_empty_tile = current_empty_tile + 1
-                if current_empty_tile == kth_selected_tile:
-                    board[i][j] = tile_value
-                    spawned = True
-                    break
-
-        if spawned:
-            break
-
-    return spawned
 
 
 # 2D array

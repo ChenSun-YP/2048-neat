@@ -15,3 +15,5 @@ __pycache__/
 *stats*.dat*
 .idea/
 venv/
+*Digraph.gv
+*.svg
