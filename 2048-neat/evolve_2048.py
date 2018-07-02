@@ -1,38 +1,41 @@
 import os
 
 import neat
-import interface_2048 as game
 import visualize
+import game.tk_gui as gui
 from game.utils import Direction
+from game.core_2048 import GameCore
+from game.utils import State
 
 # To adapt for different game size, change this and change num_inputs in the config
-game_size = 4
+GAME_SIZE = 4
+NOT_MOVED_RESTART_THRESHOLD = 10
 
 neurons_in = []
-
-for i in range(0, game_size-1):
+for i in range(GAME_SIZE):
     new = []
-    [new.append(0) for j in range(0, game_size - 1) ]
+    [new.append(0) for j in range(GAME_SIZE)]
     neurons_in.append(new)
 
-
-# up, left, down, right
+# up, down, left, right
 neurons_out = [0, 0, 0, 0]
+
+# Create GUI with fake board as placeholder
+GUI = gui.GameGUI(neurons_in)
 
 
 def map_neuron_to_move(pos):
     if pos == 0:
         return Direction.UP
     elif pos == 1:
-        return Direction.LEFT
-    elif pos == 2:
         return Direction.DOWN
+    elif pos == 2:
+        return Direction.LEFT
     elif pos == 3:
         return Direction.RIGHT
 
 
 def eval_genomes(genomes, config):
-    game.initialize()
     for genome_id, genome in genomes:
         eval_genome(genome_id, genome, config)
 
@@ -40,34 +43,35 @@ def eval_genomes(genomes, config):
 def eval_genome(genome_id, genome, config):
     genome.fitness = 0.0
     net = neat.nn.FeedForwardNetwork.create(genome, config)
-    game.restart_game(game_size)
+    game = GameCore(GAME_SIZE)
+    game.restart_game()
+    GUI.set_board(game.Board())
 
     # Play game till game over, then evaluate fitness
     game_over = False
-    score = 0
+    board = game.Board()
+    not_moved_count = 0
     while not game_over:
         # Squash the n by n board into 1 by (n * n)
-        board = game.status['board']
         in_neurons = [j for i in board for j in i]
         output = net.activate(in_neurons)
 
         # Use the 'most activated' output neuron as the intended direction
-        max_i = 0
-        max_out = 0
-        for out_i, out in enumerate(output):
-            if out > max_out:
-                max_i = out_i
-                max_out = out
+        max_i = max(output)
 
         # Play the game with the intended direction
-        game.make_move(map_neuron_to_move(max_i))
-        status = game.status
-        game_state = game.state
-        if game_state == game.State.GAMEOVER:
-            game_over = True
-            score = status['score']
+        moved = game.try_move(map_neuron_to_move(max_i))
+        GUI.repaint()
+        if not moved:
+            not_moved_count = not_moved_count + 1
 
-    genome.fitness = score
+        # for i in board:
+        #     print(i)
+
+        if game.State() == State.WIN or game.State() == State.LOSS or not_moved_count == NOT_MOVED_RESTART_THRESHOLD:
+            game_over = True
+
+    genome.fitness = game.Score()
 
 
 def run(config_file):
@@ -83,7 +87,7 @@ def run(config_file):
     p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    p.add_reporter(neat.Checkpointer(5))
+    p.add_reporter(neat.Checkpointer(None))
 
     # Run for up to 300 generations.
     winner = p.run(eval_genomes, 300)
@@ -98,13 +102,10 @@ def run(config_file):
     #     output = winner_net.activate(xi)
     #     print("input {!r}, expected output {!r}, got {!r}".format(xi, xo, output))
 
-    node_names = {-1:'A', -2: 'B', 0:'A XOR B'}
+    node_names = {-1: 'A', -2: 'B', 0: 'A XOR B'}
     visualize.draw_net(config, winner, True, node_names=node_names)
     visualize.plot_stats(stats, ylog=False, view=True)
     visualize.plot_species(stats, view=True)
-
-    p = neat.Checkpointer.restore_checkpoint('neat-checkpoint-4')
-    p.run(eval_genomes, 10)
 
 
 if __name__ == '__main__':

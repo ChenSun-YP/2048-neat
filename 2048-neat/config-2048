@@ -1,8 +1,8 @@
-#--- parameters for the XOR-2 experiment ---#
+#--- parameters for the 2048 game ---#
 
 [NEAT]
 fitness_criterion     = max
-fitness_threshold     = 3.9
+fitness_threshold     = 32768
 pop_size              = 150
 reset_on_extinction   = False
 
