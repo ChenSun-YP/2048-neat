@@ -1,4 +1,5 @@
-import game.utils as utils
+from game import utils
+from game.utils import Direction
 from tkinter import *
 
 WINDOW_SIZE = 1000
@@ -14,26 +15,25 @@ class GameGUI(Frame):
         self.board = game.Board()
         self.board_size = len(self.board)
         self.score = game.Score()
+        self.move_count = 0
 
         Frame.__init__(self)
         self.grid()
         self.master.title("2048")
         self.board_grid_cells = []
         self.score_grid_cells = []
+        self.direction_grid_cells = []
         self._draw_board()
         self._draw_score()
 
-    # For decoupling view with game logic
-    # def set_board(self, board):
-    #     self.board = board
-    #
-    # def set_score(self, score):
-    #     self.score = score
+    def reset_move_count(self):
+        self.move_count = 0
 
     def set_game(self, game):
         self.game = game
 
-    def repaint(self):
+    # Should be used when tiles changed on the board
+    def repaint_board(self):
         self.board = self.game.Board()
         for i in range(self.board_size):
             for j in range(self.board_size):
@@ -49,6 +49,13 @@ class GameGUI(Frame):
         self.update_idletasks()
         self.update()
 
+    # Return other
+    def repaint_other(self):
+        self.score_grid_cells[1].config(text="Moves: " + str(self.move_count))
+
+        self.update_idletasks()
+        self.update()
+
     def _draw_board(self):
         background = Frame(self, bg=_get_colour(None), width=WINDOW_SIZE, height=WINDOW_SIZE)
         background.grid()
@@ -57,9 +64,11 @@ class GameGUI(Frame):
         for i in range(self.board_size):
             grid_row = []
             for j in range(self.board_size):
-                cell = Frame(board_frame, bg=_get_colour(EMPTY_TILE), width=BOARD_DISPLAY_SIZE / self.board_size, height=BOARD_DISPLAY_SIZE / self.board_size)
+                cell = Frame(board_frame, bg=_get_colour(EMPTY_TILE), width=BOARD_DISPLAY_SIZE / self.board_size,
+                             height=BOARD_DISPLAY_SIZE / self.board_size)
                 cell.grid(row=i, column=j, padx=GRID_PADDING, pady=GRID_PADDING)
-                t = Label(master=cell, text="", bg=_get_colour(EMPTY_TILE), justify=CENTER, font=FONT, width=4, height=2)
+                t = Label(master=cell, text="", bg=_get_colour(EMPTY_TILE), justify=CENTER, font=FONT, width=4,
+                          height=2)
                 t.grid()
                 grid_row.append(t)
 
@@ -70,9 +79,31 @@ class GameGUI(Frame):
         score_frame_size = 50
         score_frame = Frame(self, bg=_get_colour(None), width=score_frame_size / 2, height=score_frame_size)
         score_frame.grid()
-        score_text = Label(master=score_frame, text="Score: " + str(self.score), bg=_get_colour(None), justify=CENTER, font=("Verdana", 10, "bold"))
+        score_text = Label(master=score_frame, text="Score: " + str(self.score), bg=_get_colour(None), justify=CENTER,
+                           font=("Verdana", 10, "bold"))
+        move_count_text = Label(master=score_frame, text="Moves: " + str(0), bg=_get_colour(None), justify=CENTER,
+                                font=("Verdana", 10, "bold"))
         self.score_grid_cells.append(score_text)
+        self.score_grid_cells.append(move_count_text)
         score_text.grid()
+        move_count_text.grid()
+        self.update()
+
+    # Shows which direction is game has been told to try move toward
+    def _draw_direction(self):
+        arrow_size = 50
+        direction_frame = Frame(self, bg=_get_colour(None), width=BOARD_DISPLAY_SIZE / 2, height=BOARD_DISPLAY_SIZE / 2)
+        direction_frame.grid()
+        directions = [Direction.UP, Direction.LEFT, Direction.DOWN, Direction.RIGHT]
+        arrows = []
+        colors = ["#111111", "#222222", "#333333", "#444444"]
+        i = 0
+        for direction in directions:
+            arrow = Frame(direction_frame, bg=_get_colour(None), width=arrow_size, height=arrow_size)
+            text = Label(master=arrow, text=direction, bg=colors[i], font=("Verdana", 10, "bold"))
+            text.grid()
+            arrows.append(text)
+            i = i + 1
         self.update()
 
 
