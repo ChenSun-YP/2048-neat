@@ -6,7 +6,7 @@ from game.utils import char_to_direction
 from random import randint
 
 EMPTY_TILE = 0
-
+ID = 0
 
 class GameCore:
     def __init__(self, game_size=4):
@@ -117,7 +117,7 @@ class GameCore:
         probability = randint(1, 100)
         tile_value = 2 if probability <= 90 else 4
 
-        kth_selected_tile = randint(0, num_empty_tiles - 1)
+        kth_selected_tile = randint(1, num_empty_tiles)
         current_empty_tile = 0
         for i, i_val in enumerate(board):
             for j, j_val in enumerate(i_val):
