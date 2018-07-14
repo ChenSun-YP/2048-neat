@@ -84,15 +84,14 @@ def eval_genome(genome_id, genome, config):
     genome.fitness = fitness(game, consecutive_not_moved == NOT_MOVED_RESTART_THRESHOLD)
 
 
-def fitness(game, timedout=False):
+def fitness(game, timedOut=False):
     # Squash to 1D array
     arr = [j for i in game.Board() for j in i]
     max_val = max(arr)
-    fitness = game.Score() * max_val
-    if timedout:
-        return fitness
+    if timedOut:
+        return game.Score() * max_val
     else:
-        return fitness / 2
+        return game.Score()
 
 
 def normalize(arr):
@@ -120,8 +119,9 @@ def run(config_file):
     p.add_reporter(stats)
     p.add_reporter(neat.Checkpointer(None))
 
+
     # Run for up to 300 generations.
-    winner = p.run(eval_genomes, 9000)
+    winner = p.run(eval_genomes, 50)
 
     # Display the winning genome.
     print('\nBest genome:\n{!s}'.format(winner))
