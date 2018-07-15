@@ -3,9 +3,12 @@ from math import log2
 
 import time
 
+import math
+
 import neat
 import visualize
 import game.tk_gui as gui
+from game import utils
 from game.utils import Direction
 from game.core_2048 import GameCore
 from game.utils import State
@@ -13,7 +16,6 @@ from game.utils import State
 # To adapt for different game size, change this and change num_inputs in the config
 GAME_SIZE = 4
 NOT_MOVED_RESTART_THRESHOLD = 10
-termination_reasons = ["Too many invalid moves", "Board Full"]
 
 neurons_in = []
 for i in range(GAME_SIZE):
@@ -61,15 +63,16 @@ def eval_genome(genome_id, genome, config):
         output = net.activate(in_neurons)
 
         # Use the 'most activated' output neuron as the intended direction
-        max_i = round(max(output))
-        max_pos = 0
-        for i, val_i in enumerate(output):
-            if val_i == max_i:
-                max_pos = i
+        # Generate list of tuples which are (direction, output weight)
+        output_moves = [(map_neuron_to_move(i), output[i]) for i in range(len(output))]
+        output_moves = sorted(output_moves, key=lambda x: x[1])
 
-        # Play the game with the intended direction
-        move = map_neuron_to_move(max_pos)
-        moved = game.try_move(move)
+        # Try move the board starting with the highest weighted output direction
+        for (direction, weight) in output_moves:
+            moved = game.try_move(direction)
+            if moved:
+                break
+
         if moved:
             GUI.repaint_board()
             successful_moves = successful_moves + 1
@@ -84,14 +87,30 @@ def eval_genome(genome_id, genome, config):
     genome.fitness = fitness(game, consecutive_not_moved == NOT_MOVED_RESTART_THRESHOLD)
 
 
+score_w = 1.0
+smoothness_w = 1.0
 def fitness(game, timedOut=False):
-    # Squash to 1D array
-    arr = [j for i in game.Board() for j in i]
-    max_val = max(arr)
-    if timedOut:
-        return game.Score() * max_val
-    else:
-        return game.Score()
+    score = game.Score()
+    smoothness = calc_smoothness(game)
+    board = [i for j in game.Board() for i in j]
+
+    return (score * score_w + smoothness * smoothness_w) * log2(max(board))
+
+
+# Smoothness is the sum of all differences between non-zero tiles, with each difference only counted once.
+def calc_smoothness(game):
+    board = game.Board()
+    smoothness = 0
+    # Only rotate twice to avoid double counting
+    # Ignore 0 tiles
+    for rotation in range(2):
+        for i in range(0, len(board)):
+            for j in range(0, len(board[i])):
+                if board[i][j] != 0 and j + 1 < len(board[i]) and board[i][j + 1] != 0:
+                    smoothness = smoothness - math.fabs(board[i][j] - board[i][j + 1])
+        utils.rotate_clockwise(board)
+
+    return smoothness
 
 
 def normalize(arr):
@@ -121,7 +140,7 @@ def run(config_file):
 
 
     # Run for up to 300 generations.
-    winner = p.run(eval_genomes, 50)
+    winner = p.run(eval_genomes, 300)
 
     # Display the winning genome.
     print('\nBest genome:\n{!s}'.format(winner))

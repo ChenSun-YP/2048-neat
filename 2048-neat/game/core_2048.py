@@ -1,3 +1,4 @@
+from game import utils
 from game.utils import Direction
 # from game.ub4c106207f7d7ae4d7fb268df44519d4e1e
 # from game.utils import Key
@@ -61,14 +62,14 @@ class GameCore:
         else:
             return moved
 
-        rotate_clockwise(self.board, rotations)
+        utils.rotate_clockwise(self.board, rotations)
 
         # Merge then shift through empty space
         merged = self._merge_down(self.board)
         shifted = self._shift_down(self.board)
         moved = merged or shifted
 
-        rotate_clockwise(self.board, back_rotations)
+        utils.rotate_clockwise(self.board, back_rotations)
 
         if moved:
             self._spawn_tile(self.board)
@@ -144,10 +145,10 @@ def has_move(board):
         _has_move = has_merge_down(board)
         if _has_move:
             # Rotate the board back
-            rotate_clockwise(board, 5 - i)
+            utils.rotate_clockwise(board, 5 - i)
             return _has_move
 
-        rotate_clockwise(board)
+        utils.rotate_clockwise(board)
 
     return _has_move
 
@@ -175,19 +176,4 @@ def count_value(arr, value):
     return count
 
 
-# 2D array, rotates by 90 degrees
-def rotate_clockwise(arr, iteration = 1):
-    if iteration <= 0:
-        return
 
-    l = len(arr)
-    for i in range(0, iteration):
-        for s in range(0, int(l / 2)):
-            for j in range(0, l - (2 * s) - 1):
-                temp = arr[s][s + j]
-                arr[s][s + j] = arr[l - s - j - 1][s]
-                arr[l - s - j - 1][s] = arr[l - s - 1][l - s - j - 1]
-                arr[l - s - 1][l - s - j - 1] = arr[s + j][l - s - 1]
-                arr[s + j][l - s - 1] = temp
-
-    return arr
