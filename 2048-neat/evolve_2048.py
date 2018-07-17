@@ -59,7 +59,7 @@ def eval_genome(genome_id, genome, config):
     successful_moves = 0
     while not game_over:
         # Squash the n by n board into 1 by (n * n)
-        in_neurons = [j for i in board for j in i]
+        in_neurons = normalize([j for i in board for j in i])
         output = net.activate(in_neurons)
 
         # Use the 'most activated' output neuron as the intended direction
@@ -94,10 +94,10 @@ def fitness(game, timedOut=False):
     smoothness = calc_smoothness(game)
     board = [i for j in game.Board() for i in j]
 
-    return (score * score_w + smoothness * smoothness_w) * log2(max(board))
+    return (score * score_w / (smoothness * smoothness_w)) * log2(max(board)) * -1
 
 
-# Smoothness is the sum of all differences between non-zero tiles, with each difference only counted once.
+# Smoothness is the sum of all: differences between two non-zero tiles / the smaller tile
 def calc_smoothness(game):
     board = game.Board()
     smoothness = 0
@@ -107,7 +107,8 @@ def calc_smoothness(game):
         for i in range(0, len(board)):
             for j in range(0, len(board[i])):
                 if board[i][j] != 0 and j + 1 < len(board[i]) and board[i][j + 1] != 0:
-                    smoothness = smoothness - math.fabs(board[i][j] - board[i][j + 1])
+                    current_smoothness = math.fabs(log2(board[i][j]) - log2(board[i][j + 1]))
+                    smoothness = smoothness - current_smoothness
         utils.rotate_clockwise(board)
 
     return smoothness
@@ -116,8 +117,10 @@ def calc_smoothness(game):
 def normalize(arr):
     val = max(arr)
     log_val = log2(val)
+    if log_val == 0:
+        return
     for i in range(len(arr)):
-        if val != 0:
+        if arr[i] != 0:
             arr[i] = log2(arr[i]) / log_val
 
     return arr
@@ -140,7 +143,7 @@ def run(config_file):
 
 
     # Run for up to 300 generations.
-    winner = p.run(eval_genomes, 300)
+    winner = p.run(eval_genomes, 50)
 
     # Display the winning genome.
     print('\nBest genome:\n{!s}'.format(winner))
